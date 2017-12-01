@@ -2,6 +2,9 @@ module sqat::series1::A1_SLOC
 
 import IO;
 import util::FileSystem;
+import List;
+import String;
+import reader::Reader;
 
 /* 
 
@@ -34,10 +37,18 @@ Bonus:
 
 alias SLOC = map[loc file, int sloc];
 
+
+	
 SLOC sloc(loc project) {
   SLOC result = ();
-  
-  // to be done
-  
+  int noLines = 0;
+  int count = 0;
+  for(s<-files(project)){
+  noLines = size([x|x <- readFileLines(s),trim(x) != "",trim(x)[0] != "/",trim(x)[0] != "*"]);
+  result += (s:noLines);
+  count += 1;
+  println(s);
+  println(count);
+  }
   return result;
 }
