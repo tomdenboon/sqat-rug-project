@@ -41,14 +41,37 @@ alias SLOC = map[loc file, int sloc];
 	
 SLOC sloc(loc project) {
   SLOC result = ();
-  int noLines = 0;
-  int count = 0;
-  for(s<-files(project)){
-  noLines = size([x|x <- readFileLines(s),trim(x) != "",trim(x)[0] != "/",trim(x)[0] != "*"]);
-  result += (s:noLines);
-  count += 1;
-  println(s);
-  println(count);
+  int linesOfCode = 0, countMain = 0, countTest = 0;
+  for(thisFile <- files(project)){
+    // Checks if the file is not a resource file
+  	set[loc] javaFiles = files(|project://sqat-rug-project/jpacman/src/main/java|);
+    set[loc] testFiles = files(|project://sqat-rug-project/jpacman/src/test/java|);
+    bool flagMain = false, flagTest = false;
+    
+  	for(loc this <- javaFiles){
+  	  if(this == thisFile){
+        flagMain = true;
+        break;
+      }
+    }
+    
+  	for(loc this <- testFiles){
+  	  if(this == thisFile){
+  	    flagTest = true;
+  	    break;
+  	  }
+  	}
+  	
+  	if(flagMain || flagTest){
+      linesOfCode = size([x|x <- readFileLines(thisFile),trim(x) != "",trim(x)[0] != "/",trim(x)[0] != "*"]);
+      result += (thisFile:linesOfCode);
+      if(flagMain) countMain += linesOfCode;
+      else countTest += linesOfCode;
+    }
+    
   }
+  printlnExp("Actual Code: ", countMain);
+  printlnExp("Test code: ", countTest);
+  printlnExp("Total code: ", countMain + countTest);
   return result;
 }
