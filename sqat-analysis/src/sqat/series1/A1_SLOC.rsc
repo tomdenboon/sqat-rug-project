@@ -63,7 +63,12 @@ SLOC sloc(loc project) {
   	}
   	
   	if(flagMain || flagTest){
-      linesOfCode = size([x|x <- readFileLines(thisFile),trim(x) != "",trim(x)[0] != "/",trim(x)[0] != "*"]);
+      list[str] allLinesInFile = [x|x <- readFileLines(thisFile),trim(x) != "",trim(x)[0] != "/",
+                                   trim(x)[0] != "*"];
+      allLinesInFile = [x|x <- allLinesInFile,x[size(x)-1] == "{" || x[size(x)-1] == "}" || 
+                         x[size(x)-1] == ";" || x[size(x)-1] == ":"];
+                         
+      linesOfCode = size(allLinesInFile);
       result += (thisFile:linesOfCode);
       if(flagMain) countMain += linesOfCode;
       else countTest += linesOfCode;
