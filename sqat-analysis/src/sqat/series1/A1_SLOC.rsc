@@ -2,6 +2,8 @@ module sqat::series1::A1_SLOC
 
 import IO;
 import util::FileSystem;
+import List;
+import String;
 
 /* 
 
@@ -34,10 +36,25 @@ Bonus:
 
 alias SLOC = map[loc file, int sloc];
 
+list[str] removeComments(loc file){
+	list[str] noComments = [];
+  	for(s <- readFileLines(file)){
+    	if(!(/((\s|\/*)(\/\*|\s\*)|[^\w,\;]\s\/*\/|(^\/))/ := s)) {
+     		noComments += s;
+     	}
+	}
+	return noComments;
+}
+
 SLOC sloc(loc project) {
-  SLOC result = ();
-  
-  // to be done
-  
+	SLOC result = ();
+	int sizeOfFile = 0;
+   	for(sourceFile<-files(project)){
+   		if(sourceFile.extension == "java"){
+   			list[str] noComments = removeComments(sourceFile);
+   			sizeOfFile = size([x|x <- noComments,endsWith(x,";") || endsWith(x,"{") || endsWith(x,":") || startsWith(x,"@") ]);
+   			result += (sourceFile:sizeOfFile);
+   		}
+   	}
   return result;
 }

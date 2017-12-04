@@ -35,22 +35,51 @@ Bonus
 
 */
 
-set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman|, true); 
+set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true); 
 
 alias CC = rel[loc method, int cc];
+
+int calcCC(Statement impl) {
+    int result = 1;
+    visit (impl) {
+        case \if(_,_) : result += 1;
+        case \if(_,_,_) : result += 1;
+        case \case(_) : result += 1;
+        case \do(_,_) : result += 1;
+        case \while(_,_) : result += 1;
+        case \for(_,_,_) : result += 1;
+        case \for(_,_,_,_) : result += 1;
+        case \foreach(_,_,_) : result += 1;
+        case \catch(_,_): result += 1;
+        case \conditional(_,_,_): result += 1;
+        case infix(_,"&&",_) : result += 1;
+        case infix(_,"||",_) : result += 1;
+    }
+    return result;
+}
 
 CC cc(set[Declaration] decls) {
   CC result = {};
   
-  // to be done
+  for(x<-decls){
+  	visit(x){
+  		case /method(_,_,_,_,Statement impl) : result += (<impl.src,calcCC(impl)>);
+  	}
+  }
   
   return result;
+}
+
+CC check(){
+	return cc(jpacmanASTs());
 }
 
 alias CCDist = map[int cc, int freq];
 
 CCDist ccDist(CC cc) {
-  // to be done
+
+	
+  
 }
 
 
