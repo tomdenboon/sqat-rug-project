@@ -2,9 +2,11 @@ module sqat::series1::A1_SLOC
 
 import IO;
 import util::FileSystem;
+import util::Math;
 import List;
 import String;
-
+import vis::Figure;
+import vis::Render;
 /* 
 
 Count Source Lines of Code (SLOC) per file:
@@ -56,5 +58,21 @@ SLOC sloc(loc project) {
    			result += (sourceFile:sizeOfFile);
    		}
    	}
-  return result;
+	return result;
+}
+
+void treeMap(SLOC slocs){
+	list[Figure] boxes = [];
+	for(location <- slocs.file){
+		int size = slocs[location];
+		//location.file
+		str showText = location.file + " " + toString(size);
+		boxes += box(text(showText, fontColor("Red")), area(size),fillColor("Blue"));
+	}
+	t = treemap(boxes);
+	render(t);
+}
+
+test bool newLines(){
+	
 }

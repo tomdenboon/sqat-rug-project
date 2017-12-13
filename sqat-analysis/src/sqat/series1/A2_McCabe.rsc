@@ -2,7 +2,11 @@ module sqat::series1::A2_McCabe
 
 import lang::java::jdt::m3::AST;
 import IO;
-
+import Relation;
+import Set;
+import util::Math;
+import vis::Figure;
+import vis::Render;
 /*
 
 Construct a distribution of method cylcomatic complexity. 
@@ -37,7 +41,7 @@ Bonus
 
 set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true); 
 
-alias CC = rel[loc method, int cc];
+alias CC = rel[int cc, loc method];
 
 int calcCC(Statement impl) {
     int result = 1;
@@ -59,27 +63,46 @@ int calcCC(Statement impl) {
 }
 
 CC cc(set[Declaration] decls) {
-  CC result = {};
+	CC result = {};
   
-  for(x<-decls){
-  	visit(x){
-  		case /method(_,_,_,_,Statement impl) : result += (<impl.src,calcCC(impl)>);
-  	}
-  }
-  
-  return result;
+	for(x<-decls){
+  		visit(x){
+  			case /method(_,_,_,_,Statement impl) : result += (<calcCC(impl),impl.src>);
+  		}
+	}  
+	return result;
 }
 
 CC check(){
 	return cc(jpacmanASTs());
 }
 
+
 alias CCDist = map[int cc, int freq];
 
+// getting the histogram in map form.
 CCDist ccDist(CC cc) {
+	CCDist finalHisto = ();
+	set[int] ccInts = cc.cc;
+ 	for(int c <- ccInts){
+ 		int freq = size(cc[c]);
+		finalHisto += (c:freq);
+ 	}
+ 	return(finalHisto);
+}
 
+// rendering the histogram.
+void histogram(CCDist histo){
+	list[Figure] allFigs = [];
+
+	num max = max(histo.freq);
 	
-  
+	for(int c <- histo.cc){
+ 		int freq = histo[c];
+ 		num sized = freq/max; 
+ 		allFigs += box(text(toString(c), fontColor("Red")), vshrink(sized), fillColor("Blue"));
+ 	}
+	render(hcat(allFigs, std(bottom()), gap(5)));
 }
 
 
