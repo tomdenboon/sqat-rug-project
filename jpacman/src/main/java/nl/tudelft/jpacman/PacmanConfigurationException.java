@@ -1,5 +1,4 @@
 package nl.tudelft.jpacman;
-//afag
 /**
  * Exception that is thrown when JPacman cannot be properly loaded
  * from its resources.

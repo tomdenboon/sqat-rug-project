@@ -18,7 +18,6 @@ import nl.tudelft.jpacman.level.Player;
  * 
  */
 public class ScorePanel extends JPanel {
-
 	/**
 	 * Default serialisation ID.
 	 */
@@ -79,8 +78,10 @@ public class ScorePanel extends JPanel {
 			if (!p.isAlive()) {
 				score = "You died. ";
 			}
+			else {
 			score += scoreFormatter.format(p);
 			entry.getValue().setText(score);
+			}
 		}
 	}
 	

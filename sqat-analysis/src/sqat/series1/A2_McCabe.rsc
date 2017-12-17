@@ -7,6 +7,7 @@ import Set;
 import util::Math;
 import vis::Figure;
 import vis::Render;
+import util::ValueUI;
 /*
 
 Construct a distribution of method cylcomatic complexity. 
@@ -15,9 +16,9 @@ Construct a distribution of method cylcomatic complexity.
 
 Questions:
 - which method has the highest complexity (use the @src annotation to get a method's location)
-
+|project://jpacman-framework/src/main/java/nl/tudelft/jpacman/npc/ghost/Inky.java|(3664,988,<96,29>,<131,17>) cc= 8
 - how does pacman fare w.r.t. the SIG maintainability McCabe thresholds?
-
+Seeing as the most of the methods have a complexity of 1 and only couple at 4-5 the pacman project fares well on the SIG table.
 - is code size correlated with McCabe in this case (use functions in analysis::statistics::Correlation to find out)? 
   (Background: Davy Landman, Alexander Serebrenik, Eric Bouwers and Jurgen J. Vinju. Empirical analysis 
   of the relationship between CC and SLOC in a large corpus of Java methods 
@@ -39,42 +40,47 @@ Bonus
 
 */
 
-set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true); 
+set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);  
 
 alias CC = rel[int cc, loc method];
 
-int calcCC(Statement impl) {
+int methodCount(Statement impl) {
     int result = 1;
     visit (impl) {
+    	case \continue() : result += 1;
+    	case \continue(_) : result += 1;
         case \if(_,_) : result += 1;
         case \if(_,_,_) : result += 1;
         case \case(_) : result += 1;
+        case \defaultCase() : result += 1;
         case \do(_,_) : result += 1;
         case \while(_,_) : result += 1;
+        case \break() : result += 1;
         case \for(_,_,_) : result += 1;
         case \for(_,_,_,_) : result += 1;
         case \foreach(_,_,_) : result += 1;
         case \catch(_,_): result += 1;
-        case \conditional(_,_,_): result += 1;
-        case infix(_,"&&",_) : result += 1;
-        case infix(_,"||",_) : result += 1;
+        case \infix(_,"&&",_) : result += 1;
+        case \infix(_,"||",_) : result += 1;
+        case \infix(_,"?",_) : result += 1;
+        case \infix(_,":",_) : result += 1;
     }
     return result;
 }
 
 CC cc(set[Declaration] decls) {
 	CC result = {};
-  
 	for(x<-decls){
   		visit(x){
-  			case /method(_,_,_,_,Statement impl) : result += (<calcCC(impl),impl.src>);
+  			case /method(_,_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
+  			case /constructor(_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
   		}
 	}  
 	return result;
 }
 
-CC check(){
-	return cc(jpacmanASTs());
+void check(){
+	text(cc(jpacmanASTs()));
 }
 
 
@@ -84,7 +90,8 @@ alias CCDist = map[int cc, int freq];
 CCDist ccDist(CC cc) {
 	CCDist finalHisto = ();
 	set[int] ccInts = cc.cc;
- 	for(int c <- ccInts){
+ 	for(int c <- sort(ccInts)){
+ 		print(c);
  		int freq = size(cc[c]);
 		finalHisto += (c:freq);
  	}
