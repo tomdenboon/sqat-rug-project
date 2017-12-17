@@ -70,17 +70,17 @@ int methodCount(Statement impl) {
 
 CC cc(set[Declaration] decls) {
 	CC result = {};
-	for(x<-decls){
-  		visit(x){
-  			case /method(_,_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
-  			case /constructor(_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
-  		}
-	}  
+
+  	visit(decls){
+  		case /method(_,_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
+  		case /constructor(_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
+  	}
+ 
 	return result;
 }
 
 void check(){
-	text(cc(jpacmanASTs()));
+	text(jpacmanASTs());
 }
 
 
