@@ -41,6 +41,7 @@ Bonus
 */
 
 set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);  
+set[Declaration] testASTs() = createAstsFromEclipseProject(|project://sqat-analysis/src/sqat/util/McCabeTest.java|, true);
 
 alias CC = rel[int cc, loc method];
 
@@ -112,5 +113,7 @@ void histogram(CCDist histo){
 	render(hcat(allFigs, std(bottom()), gap(5)));
 }
 
+test bool checkCase()
+	= cc(testASTs())== ({<15,|project://sqat-analysis/src/sqat/util/McCabeTest.java|(88,639,<4,39>,<47,2>)>});
 
 
