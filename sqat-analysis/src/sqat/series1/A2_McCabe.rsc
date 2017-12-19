@@ -1,6 +1,7 @@
 module sqat::series1::A2_McCabe
 
 import lang::java::jdt::m3::AST;
+import sqat::series1::A1_SLOC;
 import IO;
 import Relation;
 import Set;
@@ -8,6 +9,7 @@ import util::Math;
 import vis::Figure;
 import vis::Render;
 import util::ValueUI;
+import analysis::statistics::Correlation;
 /*
 
 Construct a distribution of method cylcomatic complexity. 
@@ -24,7 +26,8 @@ Seeing as the most of the methods have a complexity of 1 and only couple at 4-5 
   of the relationship between CC and SLOC in a large corpus of Java methods 
   and C functions Journal of Software: Evolution and Process. 2016. 
   http://homepages.cwi.nl/~jurgenv/papers/JSEP-2015.pdf)
-  
+After using the correlation function comparing the lines of code and the cc of a method. We get a value of 0.7008536178241318
+which indicates that in jpacman they are correlated
 - what if you separate out the test sources?
 
 Tips: 
@@ -43,7 +46,7 @@ Bonus
 set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);  
 set[Declaration] testASTs() = createAstsFromEclipseProject(|project://sqat-analysis/src/sqat/util/McCabeTest.java|, true);
 
-alias CC = rel[int cc, loc method];
+alias CC = rel[loc method, int cc];
 
 int methodCount(Statement impl) {
     int result = 1;
@@ -73,8 +76,8 @@ CC cc(set[Declaration] decls) {
 	CC result = {};
 
   	visit(decls){
-  		case /method(_,_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
-  		case /constructor(_,_,_,Statement impl) : result += (<methodCount(impl),impl.src>);
+  		case /method(_,_,_,_,Statement impl) : result += (<impl.src,methodCount(impl)>);
+  		case /constructor(_,_,_,Statement impl) : result += (<impl.src,methodCount(impl)>);
   	}
  
 	return result;
@@ -90,13 +93,33 @@ alias CCDist = map[int cc, int freq];
 // getting the histogram in map form.
 CCDist ccDist(CC cc) {
 	CCDist finalHisto = ();
-	set[int] ccInts = cc.cc;
- 	for(int c <- sort(ccInts)){
- 		print(c);
- 		int freq = size(cc[c]);
-		finalHisto += (c:freq);
+	for(int init <- cc.cc){
+		finalHisto += (init:0);
+	}
+	
+	set[loc] ccLocs = cc.method;
+ 	for(loc c <- ccLocs){
+ 		set[int] ccInts = cc[c];
+ 		for(int i <- ccInts){
+ 			int frequency = finalHisto[i] + 1;
+ 			finalHisto += (i:frequency);
+ 		}
  	}
+ 	
  	return(finalHisto);
+}
+
+num correlation(CC cc){
+	SLOC size = ();
+	lrel[num cycloComp,num lines] linesAndCC = [];
+	set[loc] ccLocs = cc.method;
+	
+	for(methodLoc <- ccLocs){
+		size += sloc(methodLoc);
+		linesAndCC += (<getOneFrom(cc[methodLoc]),size[methodLoc]>);
+	}
+
+	return PearsonsCorrelation(linesAndCC);
 }
 
 // rendering the histogram.
