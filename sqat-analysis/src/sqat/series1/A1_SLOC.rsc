@@ -78,7 +78,7 @@ void treeMap(SLOC slocs){
 		int size = slocs[location];
 		//location.file
 		str showText =  location.file + " " + toString(size);
-		boxes += box(text(showText, fontColor("Red")), area(size),fillColor("Blue"));
+		boxes += box(text(toString(size), fontColor("Red")), area(size),fillColor("Blue"));
 	}
 	t = treemap(boxes);
 	render(t);

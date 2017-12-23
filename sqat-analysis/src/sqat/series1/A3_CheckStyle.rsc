@@ -113,13 +113,18 @@ set[Message] returnStatementCountCheck(){
 	return result;
 }
 
-int getDeclaration(list[Declaration] body,loc class){
+int getDeclaration(list[Declaration] body, loc classLocation){
 	int result = 1;
 	visit(body){
-		case method(_,_,_,_,Statement impl) : result +=1;
-		case field(_,_): result +=1;
-		case constructor(_,_,_,_) : result +=1;
+		case Declaration m:method(_,_,_,_,_) : result += 1;
+		case Declaration m:method(_,_,_,_) : result += 1;
+		case Declaration c:class(_,_,_,_) : result += 1;
+		case Declaration c:constructor(_,_,_,_) : result += 1;
+		case Declaration f:field(_,_) : result += 1;
 	}
+	
+	println(classLocation);
+	println(result);
 	return result;
 
 }
@@ -129,16 +134,16 @@ int getComments(loc class){
 
 }
 
+
 set[Message] getCommentRatio(){
 	set[Message] result = {};
 	
 	visit(jpacmanASTs()){
 		case theClass:class(_,_,_,list[Declaration] body) :
-			if((getComments(theClass.src)/getDeclaration(theClass.body,theClass.src)) >4){
+			if((getComments(theClass.src)/getDeclaration(body,theClass.src)) > 4){
 				result += warning("Comment to declaration ratio too high!!!",theClass.src);
 			}
 	}
-	
 	return result;
 }
 
