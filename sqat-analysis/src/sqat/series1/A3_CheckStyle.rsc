@@ -9,6 +9,7 @@ import util::FileSystem;
 import String;
 import List;
 import util::ValueUI;
+import util::ResourceMarkers;
 /*
 
 Assignment: detect style violations in Java source code.
@@ -28,6 +29,10 @@ finds them.
 Questions
 - for each violation: look at the code and describe what is going on? 
   Is it a "valid" violation, or a false positive?
+  For our custom checkstyle we made a comment to declaration ratio
+  the idea being that there shouldnt be too many comments describing the code
+  only one real violation was found while the others were merely flavor text for the 
+  npcs in the game
 
 Tips 
 
@@ -48,7 +53,7 @@ Bonus:
 */
 
 set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);  
-
+//gets the loc for each method
 set[Message] methodLoc(loc impl,set[Message] result){
 	if(20<sizeOfFile(removeComments(impl))){
 		result += warning("Long method!!!",impl);
@@ -56,7 +61,7 @@ set[Message] methodLoc(loc impl,set[Message] result){
 	return result;
 }
 
-set[Message] methodCount(){	
+set[Message] methodCountLoc(){	
 	set[Message] result = {};	
 
   	visit(jpacmanASTs()){
@@ -66,13 +71,13 @@ set[Message] methodCount(){
   	
   	return result;
 }
-
+//creats warning if a static import is made
 set[Message] importStringCheck(list[Declaration] imports,set[Message] result){
 
 	for(x <- imports){
 		if(startsWith(readFile(x.src),"import static")){
 		
-			result += warning("Static method!!!",x.src);
+			result += warning("Static method warning!!!",x.src);
 		}
 	}
 	return result;
@@ -89,7 +94,7 @@ set[Message] staticImportCheck(){
   	return result;
 }
 
-
+//tallies up return statements in a method
 int getReturn(Statement method){
 	int result = 0;
 	visit(method){
@@ -106,14 +111,14 @@ set[Message] returnStatementCountCheck(){
 	visit(jpacmanASTs()){
 		case /method(_,_,_,_,Statement impl) :
 			if(getReturn(impl) > 3){
-					result += warning("TOO MANY RETURNS!!!",impl.src);
+					result += warning("TOO many returns!!!",impl.src);
 		}
 	}
 	
 	return result;
 }
-
-int getDeclaration(list[Declaration] body, loc classLocation){
+//tallies up declarations in a class
+int getNumberOfDeclaration(list[Declaration] body, loc classLocation){
 	int result = 1;
 	visit(body){
 		case Declaration m:method(_,_,_,_,_) : result += 1;
@@ -129,7 +134,7 @@ int getDeclaration(list[Declaration] body, loc classLocation){
 
 }
 
-int getComments(loc class){
+int getNumberOfComments(loc class){
 	return size([x|x<-readFileLines(class),startsWith(trim(x),"//") || (startsWith(trim(x),"*") && size(trim(x)) > 2)]);
 
 }
@@ -140,19 +145,25 @@ set[Message] getCommentRatio(){
 	
 	visit(jpacmanASTs()){
 		case theClass:class(_,_,_,list[Declaration] body) :
-			if((getComments(theClass.src)/getDeclaration(body,theClass.src)) > 4){
+			if((getNumberOfComments(theClass.src)/getNumberOfDeclaration(body,theClass.src)) > 4){
 				result += warning("Comment to declaration ratio too high!!!",theClass.src);
 			}
 	}
 	return result;
 }
 
-set[Message] checkStyle(loc project) {
+set[Message] checkStyle() {
   	set[Message] result = {};
-  	//result += methodCount();
+  	//result += methodCountLoc();
   	//result += staticImportCheck();
   	//result += returnStatementCountCheck();
-  	//result += getCommentRatio();
+  	result += getCommentRatio();
   	
   	return result;
+}
+
+
+void messageMarker(){
+
+	addMessageMarkers(checkStyle());
 }

@@ -29,6 +29,8 @@ Seeing as the most of the methods have a complexity of 1 and only couple at 4-5 
 After using the correlation function comparing the lines of code and the cc of a method. We get a value of 0.7008536178241318
 which indicates that in jpacman they are correlated
 - what if you separate out the test sources?
+.64 for just tests
+.818 for just the main code
 
 Tips: 
 - the AST data type can be found in module lang::java::m3::AST
@@ -43,11 +45,12 @@ Bonus
 
 */
 
-set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);  
+set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework/src/test/java/nl/tudelft/jpacman/LauncherSmokeTest.java|, true);  
 set[Declaration] testASTs() = createAstsFromEclipseProject(|project://sqat-analysis/src/sqat/util/McCabeTest.java|, true);
+set[Declaration] testSourceASTs() = createAstsFromEclipseProject(|project://sqat-analysis/src/sqat/series1/main/java|,true);
 
 alias CC = rel[loc method, int cc];
-
+//adds up CC for a given method
 int methodCount(Statement impl) {
     int result = 1;
     visit (impl) {
@@ -74,7 +77,7 @@ int methodCount(Statement impl) {
 
 CC cc(set[Declaration] decls) {
 	CC result = {};
-
+	//computes CC for each method and constructor with a body
   	visit(decls){
   		case /method(_,_,_,_,Statement impl) : result += (<impl.src,methodCount(impl)>);
   		case /constructor(_,_,_,Statement impl) : result += (<impl.src,methodCount(impl)>);
@@ -82,9 +85,9 @@ CC cc(set[Declaration] decls) {
  
 	return result;
 }
-
+//testing function
 void check(){
-	text(jpacmanASTs());
+	cc(jpacmanASTs());
 }
 
 

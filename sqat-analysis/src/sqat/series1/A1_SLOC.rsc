@@ -38,6 +38,7 @@ Bonus:
 
 alias SLOC = map[loc file, int sloc];
 
+
 bool isNotComment(str line){
 	if(startsWith(trim(line),"/*") || startsWith(trim(line),"*") || startsWith(trim(line),"//")){
 		return false;
@@ -65,6 +66,7 @@ SLOC sloc(loc project) {
 	SLOC result = ();
    	for(sourceFile<-files(project)){
    		if(sourceFile.extension == "java"){
+   		//first removes possible comment lines then counts up possible source lines and tallies up size
    			result += (sourceFile:sizeOfFile(removeComments(sourceFile)));
    		}
    	}
