@@ -52,43 +52,51 @@ Bonus:
 
 */
 
-set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);  
-//gets the loc for each method
+set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);
+Declaration testStyle() = createAstFromFile(|project://CheckStyleTests/StyleTest.java|,true);
+Declaration testFailStyle() = createAstFromFile(|project://CheckStyleTests/StyleFail.java|,true);
+
+
+//checks for long methods
 set[Message] methodLoc(loc impl,set[Message] result){
 	if(20<sizeOfFile(removeComments(impl))){
 		result += warning("Long method!!!",impl);
 	}
 	return result;
 }
-
-set[Message] methodCountLoc(){	
+//finds methods and constructors and feeds them to helper function methodLoc to check for loc
+set[Message] methodCountLoc(set[Declaration] decls){	
 	set[Message] result = {};	
-
-  	visit(jpacmanASTs()){
+  	visit(decls){
   		case /method(_,_,_,_,Statement impl) : result += methodLoc(impl.src,result);
   		case /constructor(_,_,_,Statement impl) : result += methodLoc(impl.src,result);
   	}
   	
   	return result;
 }
-//creats warning if a static import is made
+
+//creates warning if a static import is made
 set[Message] importStringCheck(list[Declaration] imports,set[Message] result){
 
 	for(x <- imports){
 		if(startsWith(readFile(x.src),"import static")){
-		
+
 			result += warning("Static method warning!!!",x.src);
 		}
 	}
 	return result;
 }
 
-set[Message] staticImportCheck(){
+//for each cu checks the list of imports for static imports via helper function
+set[Message] staticImportCheck(set[Declaration] decls){
 	
 	set[Message] result = {};	
 
-  	visit(jpacmanASTs()){
-  		case /compilationUnit(_,list[Declaration] imports,_) : result += importStringCheck(imports,result);
+  	visit(decls){
+  		case /compilationUnit(_,list[Declaration] imports,_) : 
+  			result += importStringCheck(imports,result);
+  		case /compilationUnit(list[Declaration] imports,_) : 
+  			result += importStringCheck(imports,result);
   	}
 
   	return result;
@@ -103,12 +111,11 @@ int getReturn(Statement method){
 	}	
 	return result;
 }
-
-set[Message] returnStatementCountCheck(){
+//Checks if there are too many return statements in a method
+set[Message] returnStatementCountCheck(set[Declaration] decls){
 	set[Message] result = {};
 	
-	
-	visit(jpacmanASTs()){
+	visit(decls){
 		case /method(_,_,_,_,Statement impl) :
 			if(getReturn(impl) > 3){
 					result += warning("TOO many returns!!!",impl.src);
@@ -117,19 +124,19 @@ set[Message] returnStatementCountCheck(){
 	
 	return result;
 }
+
 //tallies up declarations in a class
 int getNumberOfDeclaration(list[Declaration] body, loc classLocation){
+	//start at 1 because we count the starting method we go into this function with
 	int result = 1;
 	visit(body){
 		case Declaration m:method(_,_,_,_,_) : result += 1;
 		case Declaration m:method(_,_,_,_) : result += 1;
 		case Declaration c:class(_,_,_,_) : result += 1;
 		case Declaration c:constructor(_,_,_,_) : result += 1;
-		case Declaration f:field(_,_) : result += 1;
+		case Declaration f:field(_,_) : result += 1;//count field as well because explanation might be needed for it
 	}
 	
-	println(classLocation);
-	println(result);
 	return result;
 
 }
@@ -139,11 +146,11 @@ int getNumberOfComments(loc class){
 
 }
 
-
-set[Message] getCommentRatio(){
+//checks whether there are too many comments in a class compared to the amount of declarations
+set[Message] commentRatioCheck(set[Declaration] decls){
 	set[Message] result = {};
 	
-	visit(jpacmanASTs()){
+	visit(decls){
 		case theClass:class(_,_,_,list[Declaration] body) :
 			if((getNumberOfComments(theClass.src)/getNumberOfDeclaration(body,theClass.src)) > 4){
 				result += warning("Comment to declaration ratio too high!!!",theClass.src);
@@ -154,16 +161,47 @@ set[Message] getCommentRatio(){
 
 set[Message] checkStyle() {
   	set[Message] result = {};
-  	//result += methodCountLoc();
-  	//result += staticImportCheck();
-  	//result += returnStatementCountCheck();
-  	result += getCommentRatio();
+  	result += methodCountLoc(jpacmanASTs());
+  	result += staticImportCheck(jpacmanASTs());
+  	result += returnStatementCountCheck(jpacmanASTs());
+  	result += commentRatioCheck(jpacmanASTs());
   	
   	return result;
 }
-
 
 void messageMarker(){
 
 	addMessageMarkers(checkStyle());
 }
+
+//helper test function to let file be used in functions
+set[Declaration] testHelper(Declaration decl){
+	set[Declaration] help = {};
+	help += decl;
+	return help;
+}
+//pass tests:
+test bool staticImportCheckTest()
+	= size(staticImportCheck(testHelper(testStyle()))) == 1;
+	
+test bool returnStatementCountCheckTest()
+	= size(returnStatementCountCheck(testHelper(testStyle()))) == 1;
+	
+test bool commentRatioCheckTest()
+	= size(commentRatioCheck(testHelper(testStyle()))) == 1;
+	
+test bool methodCountLocTest()
+	= size(methodCountLoc(testHelper(testStyle()))) == 1;
+//fail tests:
+test bool staticImportCheckTest()
+	= size(staticImportCheck(testHelper(testFailStyle()))) == 0;
+	
+test bool returnStatementCountCheckTest()
+	= size(returnStatementCountCheck(testHelper(testFailStyle()))) == 0;
+	
+test bool commentRatioCheckTest()
+	= size(commentRatioCheck(testHelper(testFailStyle()))) == 0;
+	
+test bool methodCountLocTest()
+	= size(methodCountLoc(testHelper(testFailStyle()))) == 0;
+

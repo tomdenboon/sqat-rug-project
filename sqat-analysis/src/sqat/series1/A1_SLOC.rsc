@@ -7,6 +7,7 @@ import List;
 import String;
 import vis::Figure;
 import vis::Render;
+import util::Math;
 /* 
 
 Count Source Lines of Code (SLOC) per file:
@@ -20,7 +21,7 @@ Tips
 
 Answer the following questions:
 - what is the biggest file in JPacman? project://jpacman-framework/src/main/java/nl/tudelft/jpacman/level/Level.java
-- what is the total size of JPacman? 1887 lines of code
+- what is the total size of JPacman? 1888 lines of code
 - is JPacman large according to SIG maintainability? No it is not
 - what is the ratio between actual code and test code size? Around 76% of the project is code and 24% is test code
 
@@ -38,14 +39,14 @@ Bonus:
 
 alias SLOC = map[loc file, int sloc];
 
-
+//comment lines start with /*,*, or //
 bool isNotComment(str line){
 	if(startsWith(trim(line),"/*") || startsWith(trim(line),"*") || startsWith(trim(line),"//")){
 		return false;
 	}
 	return true;
 }
-
+//actual lines of code always end with ;,{, or : and certain stuff like test lines end with @
 bool isSourceLine(str line){
 	if(endsWith(trim(line),";") || endsWith(trim(line),"{") || endsWith(trim(line),":") || startsWith(trim(line),"@")){
 		return true;
@@ -57,7 +58,7 @@ list[str] removeComments(loc file){
 	list[str] listOfSourceLines = readFileLines(file);
 	return [line|line<-listOfSourceLines,isNotComment(line)];
 }
-
+//gets size of the actual code lines
 int sizeOfFile(list[str] fileToCount){
 	return size([line|line <- fileToCount,isSourceLine(line) ]);
 }
@@ -92,6 +93,36 @@ int totalSizeOfProject(loc project){
 	
 	for(sourceFile<-files(project)){
    		if(sourceFile.extension == "java"){
+   			totalSize += sizeOfFile(removeComments(sourceFile));
+   		}
+   	}
+	return totalSize;
+}
+
+void getRatios(loc project){
+
+	println("Percentage of Tests: <percent(getSizeOfTests(project),totalSizeOfProject(project))>");
+	println("Percentage of Main Code: <percent(getSizeOfMain(project),totalSizeOfProject(project))>");
+	
+
+}
+
+int getSizeOfTests(loc project){
+		int totalSize = 0;
+	
+	for(sourceFile<-files(project)){
+   		if(sourceFile.extension == "java" && startsWith(sourceFile.path,"/src/test")){
+   			totalSize += sizeOfFile(removeComments(sourceFile));
+   		}
+   	}
+	return totalSize;
+}
+
+int getSizeOfMain(loc project){
+		int totalSize = 0;
+	
+	for(sourceFile<-files(project)){
+   		if(sourceFile.extension == "java" && startsWith(sourceFile.path,"/src/main")){
    			totalSize += sizeOfFile(removeComments(sourceFile));
    		}
    	}

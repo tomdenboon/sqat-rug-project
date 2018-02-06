@@ -1,9 +1,12 @@
 module sqat::series2::A1b_DynCov
 
-import lang::java::\syntax::Java15;
-import ParseTree;
+import lang::java::jdt::m3::Core;
 import util::FileSystem;
-
+import IO;
+import util::ValueUI;
+import String;
+import util::Math;
+import Set;
 /*
 
 Assignment: instrument (non-test) code to collect dynamic coverage data.
@@ -43,10 +46,65 @@ Tips:
 
 */
 
+M3 m() = createM3FromEclipseProject(|project://intSetMod|);
 
-void methodCoverage(loc project) {
-  // to be done
+//gets a set of all method calls from text report
+set[str] getCallsFromText(loc textFile){
+
+	list[str] methodHits = readFileLines(textFile);
+	set[str] methodCalls= {};
+	
+	for(hit <- methodHits){
+	
+		methodCalls += hit;
+		
+	}
+	return methodCalls;
+
 }
+//gets all main methods from M3 model
+set[loc] getMethodsFromM3(str filePath){
+	rel[loc name, loc src] decls = m().declarations;
+	set[loc] allMethods = {};
+	
+	for(decl <- decls){
+		
+		if(isMethod(decl.name) && contains(decl.src.path,filePath)){
+			
+			allMethods += decl.name;
+		
+		}
+	}
+	return allMethods;
+}
+
+
+int methodCoverage(loc textFile,str filePath) {
+
+	set[loc] allMethods = getMethodsFromM3(filePath);
+	set[str] methodCalls = getCallsFromText(textFile);
+	set[loc] methodsCovered = {};
+	
+	int countMatches = 0;
+	//each call in the text file is checked against all the methods from the M3 model
+	for(methd <- allMethods){
+	
+		for(call <- methodCalls){
+		
+			if(contains(call,methd.file)){
+			
+				countMatches +=1;
+				methodsCovered+=methd;
+				
+			}
+		}
+	}
+	
+	text(allMethods - methodsCovered);
+	return percent(countMatches,size(allMethods));
+}
+
+
 
 void lineCoverage(loc project) {
   // to be done
@@ -54,26 +112,9 @@ void lineCoverage(loc project) {
 
 
 
-// Helper function to deal with concrete statement lists
-// second arg should be a closure taking a location (of the element)
-// and producing the BlockStm to-be-inserted 
-BlockStm* putAfterEvery(BlockStm* stms, BlockStm(loc) f) {
-  
-  Block put(b:(Block)`{}`) = (Block)`{<BlockStm s>}`
-    when BlockStm s := f(b@\loc);
-  
-  Block put((Block)`{<BlockStm s0>}`) = (Block)`{<BlockStm s0> <BlockStm s>}`
-    when BlockStm s := f(s0@\loc);
-  
-  Block put((Block)`{<BlockStm s0> <BlockStm+ stms>}`) 
-    = (Block)`{<BlockStm s0> <BlockStm s> <BlockStm* stms2>}`
-    when
-      BlockStm s := f(s0@\loc), 
-      (Block)`{<BlockStm* stms2>}` := put((Block)`{<BlockStm+ stms>}`);
 
-  if ((Block)`{<BlockStm* stms2>}` := put((Block)`{<BlockStm* stms>}`)) {
-    return stms2;
-  }
-}
-
-
+test bool CheckTextCalls()
+	= getCallsFromText(|project://intSet/testTextForRascal.txt|) == {"A was hit in B"};
+	
+test bool CheckFakeTextWithM3()
+	= methodCoverage(|project://intSet/testTextForRascal.txt|,"src/main") == 0;

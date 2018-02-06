@@ -10,6 +10,7 @@ import vis::Figure;
 import vis::Render;
 import util::ValueUI;
 import analysis::statistics::Correlation;
+import String;
 /*
 
 Construct a distribution of method cylcomatic complexity. 
@@ -29,8 +30,8 @@ Seeing as the most of the methods have a complexity of 1 and only couple at 4-5 
 After using the correlation function comparing the lines of code and the cc of a method. We get a value of 0.7008536178241318
 which indicates that in jpacman they are correlated
 - what if you separate out the test sources?
-.64 for just tests
-.818 for just the main code
+no correlation for tests
+.795 for just the main code
 
 Tips: 
 - the AST data type can be found in module lang::java::m3::AST
@@ -45,12 +46,12 @@ Bonus
 
 */
 
-set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework/src/test/java/nl/tudelft/jpacman/LauncherSmokeTest.java|, true);  
-set[Declaration] testASTs() = createAstsFromEclipseProject(|project://sqat-analysis/src/sqat/util/McCabeTest.java|, true);
-set[Declaration] testSourceASTs() = createAstsFromEclipseProject(|project://sqat-analysis/src/sqat/series1/main/java|,true);
+set[Declaration] jpacmanASTs() = createAstsFromEclipseProject(|project://jpacman-framework|, true);
+Declaration testASTs() = createAstFromFile(|project://McCabeTests/McCabeTest.java|, true);
+
 
 alias CC = rel[loc method, int cc];
-//adds up CC for a given method
+//adds up CC for a given method's statements
 int methodCount(Statement impl) {
     int result = 1;
     visit (impl) {
@@ -82,14 +83,26 @@ CC cc(set[Declaration] decls) {
   		case /method(_,_,_,_,Statement impl) : result += (<impl.src,methodCount(impl)>);
   		case /constructor(_,_,_,Statement impl) : result += (<impl.src,methodCount(impl)>);
   	}
- 
 	return result;
 }
-//testing function
-void check(){
-	cc(jpacmanASTs());
+//specify what folder path to check
+CC ccSplit(set[Declaration] decls,str folderPath) {
+	CC result = {};
+	//computes CC for each method and constructor with a body
+  	visit(decls){
+  		case /method(_,_,_,_,Statement impl) :
+  			//checks to see if the method is contained in the folder path specified
+  			if(contains(impl.src.path,folderPath)){
+  			 	result += (<impl.src,methodCount(impl)>);
+  			 }
+  		case /constructor(_,_,_,Statement impl) :
+  		
+  			if(contains(impl.src.path,folderPath)){
+  			 	result += (<impl.src,methodCount(impl)>);
+  			 }
+  	}
+	return result;
 }
-
 
 alias CCDist = map[int cc, int freq];
 
@@ -102,6 +115,7 @@ CCDist ccDist(CC cc) {
 	
 	set[loc] ccLocs = cc.method;
  	for(loc c <- ccLocs){
+ 		
  		set[int] ccInts = cc[c];
  		for(int i <- ccInts){
  			int frequency = finalHisto[i] + 1;
@@ -112,6 +126,7 @@ CCDist ccDist(CC cc) {
  	return(finalHisto);
 }
 
+//correlation question
 num correlation(CC cc){
 	SLOC size = ();
 	lrel[num cycloComp,num lines] linesAndCC = [];
@@ -124,7 +139,13 @@ num correlation(CC cc){
 
 	return PearsonsCorrelation(linesAndCC);
 }
-
+//helper function for test need turn decl to a set of decl in order to run cc
+CCDist testHelper(){
+	set[Declaration] helper = {};
+	helper += testASTs();
+	return ccDist(cc(helper));
+	
+}
 // rendering the histogram.
 void histogram(CCDist histo){
 	list[Figure] allFigs = [];
@@ -140,6 +161,6 @@ void histogram(CCDist histo){
 }
 
 test bool checkCase()
-	= cc(testASTs())== ({<15,|project://sqat-analysis/src/sqat/util/McCabeTest.java|(88,639,<4,39>,<47,2>)>});
+	= testHelper()== (15:1);
 
 

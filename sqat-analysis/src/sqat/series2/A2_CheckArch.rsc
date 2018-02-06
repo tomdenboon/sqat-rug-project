@@ -4,8 +4,9 @@ import sqat::series2::Dicto;
 import lang::java::jdt::m3::Core;
 import Message;
 import ParseTree;
+import String;
 import IO;
-
+import util::ValueUI;
 
 /*
 
@@ -57,18 +58,56 @@ Questions
 - come up with 3 rule types that are not currently supported by this version
   of Dicto (and explain why you'd need them). 
 */
-
+M3 m() = createM3FromEclipseProject(|project://jpacman-framework|);
 
 set[Message] eval(start[Dicto] dicto, M3 m3) = eval(dicto.top, m3);
-
 set[Message] eval((Dicto)`<Rule* rules>`, M3 m3) 
   = ( {} | it + eval(r, m3) | r <- rules );
   
 set[Message] eval(Rule rule, M3 m3) {
   set[Message] msgs = {};
-  
-  // to be done
+  switch(rule){
+  	case (Rule)`<Entity e1> cannot instantiate <Entity e2>`: msgs = checkInstantiate(e1,e2,msgs);
+  	case (Rule)`<Entity e1> must instantiate <Entity e2>`: msgs = checkInstantiate(e1,e2,msgs);
+  	case (Rule)`<Entity e1> cannot import <Entity e2>`: msgs = checkImport(e1,e2,msgs);
+  	case (Rule)`<Entity e1> cannot depend <Entity e2>`: msgs = checkDepend(e1,e2,msgs);
+  }
   
   return msgs;
 }
 
+void test1(){
+  Dicto d = parse(#Dicto,|project://sqat-analysis/src/sqat/series2/example.dicto|,allowAmbiguity= true);
+  eval(d,m());
+
+}
+
+
+set[Message] checkImport(Entity e1,Entity e2,set[Message] msgs){
+
+  return msgs;
+}
+set[Message] checkDepend(Entity e1,Entity e2,set[Message] msgs){
+
+  
+  return msgs;
+}
+set[Message] checkInstantiate(Entity e1,Entity e2,set[Message] msgs){
+
+  rel[loc from, loc to] allMethods = m().methodInvocation;
+  solve(allMethods) allMethods = allMethods + (allMethods o allMethods);
+  
+  rel[str from, str to] fromTo = {};
+  
+  for(meth<-allMethods){
+    str fromMethod = (meth.from).file;
+    str toMethod = (meth.to).file;
+	
+	
+	if(contains(fromMethod,"makeGame")) fromTo += (<fromMethod, toMethod>);
+  
+  }
+  text(fromTo);
+
+  return msgs;
+}

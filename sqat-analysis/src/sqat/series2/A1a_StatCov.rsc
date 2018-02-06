@@ -1,7 +1,13 @@
 module sqat::series2::A1a_StatCov
 
 import lang::java::jdt::m3::Core;
-
+import util::ValueUI;
+import Relation;
+import String;
+import IO;
+import Set;
+import util::Math;
+import List;
 /*
 
 Implement static code coverage metrics by Alves & Visser 
@@ -38,12 +44,124 @@ Tips
 
 Questions:
 - what methods are not covered at all?
+ there are exactly 90 methods not covered, can be shown by invoking getMethodsNotTested
 - how do your results compare to the jpacman results in the paper? Has jpacman improved?
+	Our results are worse, so either our method of finding coverage is not as accurate or
+	the project has became worse as far as test quality goes
 - use a third-party coverage tool (e.g. Clover) to compare your results to (explain differences)
 
 
 */
 
 
-M3 jpacmanM3() = createM3FromEclipseProject(|project://jpacman|);
+//M3 m() = createM3FromEclipseProject(|project://jpacman-framework|);
 
+M3 m() = createM3FromEclipseProject(|project://intSet|);
+//use this M3 for testing only,comment out other
+
+
+//gets all methods and constructors
+rel[loc name, loc src] getMethods(){
+	
+	rel[loc name, loc src] allMethods = {};
+	
+	for(decl <- m().declarations){
+		if(isMethod(decl.name)){
+		
+		allMethods += decl;
+		
+		}
+	}
+	return allMethods;
+}
+
+//gets all method invocations as well as the transitive ones
+rel[loc name, loc src] getCallsTransitively(){
+
+	rel[loc from, loc to] allMethodCalls = m().methodInvocation;
+	
+	solve(allMethodCalls){
+		allMethodCalls = allMethodCalls + (allMethodCalls o allMethodCalls);
+	
+	
+	}
+	return allMethodCalls;
+}
+
+//extracts from test methods from the rest
+set[loc] getTestMethods(){
+	set[loc] testMethods = {};
+	
+	rel[loc name, loc src] allMethods = getMethods();
+	
+	for(methd <- allMethods){
+		if(startsWith(methd.src.path,"/src/test")){
+			testMethods += methd.name;
+		}
+	}
+	return testMethods;
+}
+
+//extracts the actual methods of the project from the test methods
+set[loc] getMainMethods(){
+	set[loc] testMethods = {};
+	
+	rel[loc name, loc src] allMethods = getMethods();
+	
+	for(methd <- allMethods){
+		if(startsWith(methd.src.path,"/src/main")){
+			testMethods += methd.name;
+		}
+	}
+	return testMethods;
+}
+//gets all the method invocations just for the test methods
+set[loc] getMethodInvocFromTests(){
+	set[loc] testInvocs = {};
+	
+	set[loc] testMethods = getTestMethods();
+	rel[loc from, loc to] allCalls = getCallsTransitively();
+	
+	for(methd <- testMethods){
+	
+		testInvocs += allCalls[methd];
+	}
+	return testInvocs;
+	
+}
+//removes methods that are called from other sources such as java libraries and such
+//it also removes test methods since test methods can call other test methods
+//finally we remove any method with anonymous at the end, it seems to appear with GUI stuff like buttons
+//since those methods are already covered no reason to keep a version of them that only appears in the invocations
+set[loc] removeMethodsNotInProject(str pathName){
+	set[loc] allInvocs = getMethodInvocFromTests();
+
+	set[loc] onlyLocalMethods = {};
+	
+	for(methd <- allInvocs){
+		if(startsWith(methd.path,pathName) && methd notin getTestMethods() && !(contains(methd.path,"anonymous"))){
+			onlyLocalMethods += methd;
+		}
+	}
+	return onlyLocalMethods;
+}
+
+int getCodeCoverage(str pathName){
+	
+	int codeCoverage = percent(size(removeMethodsNotInProject(pathName)),size(getMainMethods()));
+	return codeCoverage;
+
+}
+
+int getMethodsNotTested(str pathName){
+	set[loc] unTested = getMainMethods() - removeMethodsNotInProject(pathName);
+	text(unTested);
+	return size(unTested);
+	
+}
+
+test bool codeCoverageTest()
+	= getCodeCoverage("/intSet") == 100;
+	
+test bool getMethodsNotTestedTest()
+	= getMethodsNotTested("/intSet") == 0;
