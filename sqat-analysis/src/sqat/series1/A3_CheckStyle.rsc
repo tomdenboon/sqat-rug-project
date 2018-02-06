@@ -161,8 +161,8 @@ set[Message] commentRatioCheck(set[Declaration] decls){
 
 set[Message] checkStyle() {
   	set[Message] result = {};
-  	result += methodCountLoc(jpacmanASTs());
-  	result += staticImportCheck(jpacmanASTs());
+  	//result += methodCountLoc(jpacmanASTs());
+  	//result += staticImportCheck(jpacmanASTs());
   	result += returnStatementCountCheck(jpacmanASTs());
   	result += commentRatioCheck(jpacmanASTs());
   	

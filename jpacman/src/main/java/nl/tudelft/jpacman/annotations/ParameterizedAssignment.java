@@ -2,7 +2,7 @@ package nl.tudelft.jpacman.annotations;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-//agaga;
+
 /**
  * A marker annotation for the auto-grader to identify a boundary testing solution.
  *

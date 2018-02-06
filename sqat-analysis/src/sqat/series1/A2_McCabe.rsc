@@ -11,6 +11,7 @@ import vis::Render;
 import util::ValueUI;
 import analysis::statistics::Correlation;
 import String;
+import List;
 /*
 
 Construct a distribution of method cylcomatic complexity. 
@@ -152,7 +153,7 @@ void histogram(CCDist histo){
 
 	num max = max(histo.freq);
 	
-	for(int c <- histo.cc){
+	for(int c <- sort([ c0 | c0 <- histo.cc])){
  		int freq = histo[c];
  		num sized = freq/max; 
  		allFigs += box(text(toString(c), fontColor("Red")), vshrink(sized), fillColor("Blue"));

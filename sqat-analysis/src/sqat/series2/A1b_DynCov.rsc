@@ -26,9 +26,12 @@ coverage information through the insert calls to your little API.
 
 Questions
 - use a third-party coverage tool (e.g. Clover) to compare your results to (explain differences)
+	Methods coverage for us was 100% and clover coverage was at 100%
 - which methods have full line coverage?
 - which methods are not covered at all, and why does it matter (if so)?
+	all were covered
 - what are the drawbacks of source-based instrumentation?
+	Code needs to be working in order to get analysis from dynamic coverage.
 
 Tips:
 - create a shadow JPacman project (e.g. jpacman-instrumented) to write out the transformed source files.
@@ -46,7 +49,7 @@ Tips:
 
 */
 
-M3 m() = createM3FromEclipseProject(|project://intSetMod|);
+M3 m() = createM3FromEclipseProject(|project://intSet|);
 
 //gets a set of all method calls from text report
 set[str] getCallsFromText(loc textFile){

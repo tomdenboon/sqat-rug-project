@@ -49,7 +49,7 @@ Questions:
 	Our results are worse, so either our method of finding coverage is not as accurate or
 	the project has became worse as far as test quality goes
 - use a third-party coverage tool (e.g. Clover) to compare your results to (explain differences)
-
+Clover had 78.5% coverage but two packages were skipped npc and annotations 
 
 */
 
@@ -78,7 +78,7 @@ rel[loc name, loc src] getMethods(){
 //gets all method invocations as well as the transitive ones
 rel[loc name, loc src] getCallsTransitively(){
 
-	rel[loc from, loc to] allMethodCalls = m().methodInvocation;
+	rel[loc from, loc to] allMethodCalls = m().methodInvocation+;
 	
 	solve(allMethodCalls){
 		allMethodCalls = allMethodCalls + (allMethodCalls o allMethodCalls);

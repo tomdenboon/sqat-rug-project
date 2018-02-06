@@ -58,6 +58,12 @@ Questions
 - how would you test your evaluator of Dicto rules? (sketch a design)
 - come up with 3 rule types that are not currently supported by this version
   of Dicto (and explain why you'd need them). 
+  contain: you might want a file to contain or not contain something.
+  with: 
+  have:
+  if:
+  except:
+  
 */
 
 M3 m() = createM3FromEclipseProject(|project://jpacman-framework|);
@@ -81,7 +87,7 @@ set[Message] eval(Rule rule, M3 m3) {
   return msgs;
 }
 
-void test1(){
+void startChecks(){
   Dicto d = parse(#Dicto,|project://sqat-analysis/src/sqat/series2/example.dicto|,allowAmbiguity= true);
   set[Message] msgs = eval(d,m());
   text(msgs);
@@ -125,20 +131,16 @@ set[Message] mustInstantiate(Entity e1, Entity e2, set[Message] msgs){
   loc entity1 = findsEntityInM3(replaceAll(replaceAll("<e1>", ".", "/"),"::","/"));
   loc entity2 = findsEntityInM3(replaceAll(replaceAll("<e2>", ".", "/"),"::","/"));
   
-  print(entity1);
-  print(" ");
-  println(entity2);
-  
   str warn = "<e1>" + " must instantiate " + "<e2>";
   
   rel[loc from, loc to] instantiates = m().methodInvocation*;
-  set[loc method] methods = {};
+  set[loc] methods = {};
   
   // retrieve all the methods and constructors
   if(isPackage(entity1)){
     for(javaUnit<-m().containment[entity1]){
-      for(class<-m().containment[javaUnit]){
-        methods += (m().containment[class]);
+      for(cl<-m().containment[javaUnit]){
+        methods += (m().containment[cl]);
       }
     }
   }
@@ -150,7 +152,7 @@ set[Message] mustInstantiate(Entity e1, Entity e2, set[Message] msgs){
   }
   
   
-  set[loc con] constructorsEntity2 = {};
+  set[loc] constructorsEntity2 = {};
   // retrieve the constructors of must instantiate class
   for(constr <- m().containment[entity2]){
     if(isConstructor(constr)){
@@ -161,10 +163,10 @@ set[Message] mustInstantiate(Entity e1, Entity e2, set[Message] msgs){
   // checks if one of methods inside the package, class calls the constructor, if this is not the case marks the violation
   bool instantiated = false;
   for(meth <- methods){
-    set[loc to] instantiation = instantiates[meth];
+    set[loc] instantiation = instantiates[meth];
     for(i <- instantiation){
-      for(constructor <- constructorsEntity2){
-        if(i == constructor){ 
+      for(construct <- constructorsEntity2){
+        if(i == construct){ 
           instantiated = true;
           break;
         }
@@ -182,20 +184,16 @@ set[Message] cannotInvoke(Entity e1, Entity e2, set[Message] msgs){
   loc entity1 = findsEntityInM3(replaceAll(replaceAll("<e1>", ".", "/"),"::","/"));
   loc entity2 = findsEntityInM3(replaceAll(replaceAll("<e2>", ".", "/"),"::","/"));
   
-  print(entity1);
-  print(" ");
-  println(entity2);
-  
   str warn = "<e1>" + " cannot invoke " + "<e2>";
   
   rel[loc from, loc to] invokes = m().methodInvocation*;
-  set[loc method] methods = {};
+  set[loc] methods = {};
   
   // get all the methods from the classes
   if(isPackage(entity1)){
     for(javaUnit<-m().containment[entity1]){
-      for(class<-m().containment[javaUnit]){
-        methods += (m().containment[class]);
+      for(cl<-m().containment[javaUnit]){
+        methods += (m().containment[cl]);
       }
     }
   }
@@ -207,11 +205,11 @@ set[Message] cannotInvoke(Entity e1, Entity e2, set[Message] msgs){
   }
   
   // now if one of these methods invokes the cannot invoke method mark them
-  for(m <- methods){
-    set[loc to] invocation = invokes[m];
+  for(meth <- methods){
+    set[loc] invocation = invokes[meth];
     for(i <- invocation){
       if(i == entity2){ 
-        msgs += warning(warn, m); 
+        msgs += warning(warn, meth); 
       }
     }
   }
@@ -227,10 +225,6 @@ set[Message] mustInherit(Entity e1, Entity e2, set[Message] msgs){
   bool inherits = false;
   loc entity1 = findsEntityInM3(replaceAll(replaceAll("<e1>", ".", "/"),"::","/"));
   loc entity2 = findsEntityInM3(replaceAll(replaceAll("<e2>", ".", "/"),"::","/"));
-  
-  print(entity1);
-  print(" ");
-  println(entity2);
   
   
   rel[loc from, loc to] extends = m().extends*;
@@ -269,27 +263,23 @@ set[Message] cannotDependOn(Entity e1, Entity e2, set[Message] msgs){
   
   str warn = "<e1>" + " cannot depend " + "<e2>";
   
-  print(entity1);
-  print(" ");
-  println(entity2);
-  
   rel[loc from, loc to] dependsOn = m().typeDependency*;
-  set[loc method] methods = {};
+  set[loc] methods = {};
   rel[loc from, loc to] contains = m().containment;
   
   // get all methods from the package of entity1
   if(isPackage(entity1)){
     for(jUnit<-contains[entity1]){
-      for(class<-contains[jUnit]){
-        for(method<-contains[class]){
-          methods += method;
+      for(cl<-contains[jUnit]){
+        for(meth<-contains[cl]){
+          methods += meth;
         }
       }
     }
   }
   else if(isClass(entity1)){
-    for(method<-contains[entity1]){
-      methods += method;
+    for(meth<-contains[entity1]){
+      methods += meth;
     }
   }
   else if(isMethod(entity1)){
@@ -297,11 +287,11 @@ set[Message] cannotDependOn(Entity e1, Entity e2, set[Message] msgs){
   }
   
   // Check if any of the methods of entity1 depends on entity2 and mark them
-  for(m <- methods){
-    set[loc dependency] dependencys = dependsOn[m];
+  for(meth <- methods){
+    set[loc] dependencys = dependsOn[meth];
     for(d <- dependencys){
       if(entity2 == d){
-        msgs += warning(warn, m);
+        msgs += warning(warn, meth);
       }
     }
   }
@@ -316,19 +306,15 @@ set[Message] mustImport(Entity e1, Entity e2, set[Message] msgs){
   
   str warn = "<e1>" + " must import " + "<e2>";
   
-  print(entity1);
-  print(" ");
-  println(entity2);
-  
-  rel[loc from, loc to] importStatement = m().typeDependency; // maybe make transitive
-  set[loc class] classes = {};
+  rel[loc from, loc to] importStatement = m().typeDependency; 
+  set[loc] classes = {};
   rel[loc from, loc to] contains = m().containment;
 
   // get all classes in entity1
   if(isPackage(entity1)){
     for(jUnit<-contains[entity1]){
-      for(class<-contains[jUnit]){
-        classes += class;
+      for(cl<-contains[jUnit]){
+        classes += cl;
       }
     }
   }
@@ -336,7 +322,7 @@ set[Message] mustImport(Entity e1, Entity e2, set[Message] msgs){
     classes += entity1;
   }
   
-  // check the for any classes that do not import the mandatory package/class and mark them
+  // check for any classes that do not import the mandatory package and mark them
   for(c <- classes){
     imports = false;
     set[loc] importStatements = importStatement[c];

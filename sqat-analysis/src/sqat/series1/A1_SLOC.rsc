@@ -21,7 +21,7 @@ Tips
 
 Answer the following questions:
 - what is the biggest file in JPacman? project://jpacman-framework/src/main/java/nl/tudelft/jpacman/level/Level.java
-- what is the total size of JPacman? 1888 lines of code
+- what is the total size of JPacman? 2360 lines of code
 - is JPacman large according to SIG maintainability? No it is not
 - what is the ratio between actual code and test code size? Around 76% of the project is code and 24% is test code
 
@@ -48,7 +48,8 @@ bool isNotComment(str line){
 }
 //actual lines of code always end with ;,{, or : and certain stuff like test lines end with @
 bool isSourceLine(str line){
-	if(endsWith(trim(line),";") || endsWith(trim(line),"{") || endsWith(trim(line),":") || startsWith(trim(line),"@")){
+	if(endsWith(trim(line),";") || endsWith(trim(line),"{") || endsWith(trim(line),":") 
+		|| startsWith(trim(line),"@") || endsWith(trim(line),"}") ){
 		return true;
 	}
 	return false;

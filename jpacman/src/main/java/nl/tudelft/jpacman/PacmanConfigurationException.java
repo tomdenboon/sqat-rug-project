@@ -1,4 +1,5 @@
 package nl.tudelft.jpacman;
+
 /**
  * Exception that is thrown when JPacman cannot be properly loaded
  * from its resources.
@@ -7,6 +8,7 @@ package nl.tudelft.jpacman;
  *
  */
 public class PacmanConfigurationException extends RuntimeException {
+
 	/**
 	 * A configuration exception with a direct message.
 	 * 
